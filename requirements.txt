@@ -1,0 +1,20 @@
+# LangChain 核心（简化版本）
+langchain-community==0.0.10
+chromadb==0.4.15
+
+# 嵌入模型（只保留必要的）
+sentence-transformers==2.2.2
+torch==2.1.0
+
+# PDF处理（只保留核心）
+pypdf==3.17.0
+
+# Web框架
+streamlit==1.28.0
+
+# HTTP请求
+requests==2.31.0
+
+# 数据处理
+numpy==1.24.3
+tqdm==4.66.1
