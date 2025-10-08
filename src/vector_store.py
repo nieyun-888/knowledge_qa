@@ -409,45 +409,6 @@ class SmartVectorStore(VectorStore):
             logger.error(f"获取文档统计失败: {e}")
             return {}
 
-# ===== 兼容性修复 =====
-
-def process_pdfs_and_create_vector_store(pdf_directory="./data/raw_pdfs", persist_directory="./chroma_db"):
-    """
-    处理PDF并创建向量存储的主函数
-    """
-    logger.info("开始处理PDF并创建向量存储...")
-    
-    try:
-        # 导入必要的模块
-        from .pdf_processor import PDFProcessor
-        
-        # 创建向量存储实例
-        vector_store = VectorStore(persist_directory=persist_directory)
-        
-        # 加载和处理PDF
-        pdf_processor = PDFProcessor()
-        documents = pdf_processor.load_pdfs_from_directory(pdf_directory)
-        
-        if not documents:
-            logger.error("没有找到PDF文档或加载失败")
-            return False
-        
-        # 分割文档
-        chunks = pdf_processor.split_documents(documents)
-        logger.info(f"分割完成，共生成 {len(chunks)} 个文本块")
-        
-        # 创建向量存储
-        if vector_store.create_vector_store(chunks):
-            logger.info("向量存储创建成功!")
-            return True
-        else:
-            logger.error("向量存储创建失败!")
-            return False
-            
-    except Exception as e:
-        logger.error(f"处理PDF并创建向量存储失败: {e}")
-        return False
-
 # 兼容性别名
 VectorStoreManager = VectorStore
 
@@ -466,3 +427,4 @@ def test_embedding():
 
 if __name__ == "__main__":
     test_embedding()
+
