@@ -1,9 +1,7 @@
 """
 knowledge_qa 核心模块
-包含PDF处理和向量存储功能
+向量存储功能（只检索模式）
 """
-
-from .pdf_processor import PDFProcessor
 
 # 修复导入问题
 try:
@@ -16,9 +14,8 @@ except ImportError:
 __version__ = "0.1.0"
 __author__ = "Your Name"
 
-# 定义公开的API接口
+# 定义公开的API接口（移除 PDFProcessor）
 __all__ = [
-    "PDFProcessor",
     "VectorStoreManager",
 ]
 
@@ -33,4 +30,4 @@ DEFAULT_SETTINGS = {
 import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-print(f"加载 knowledge_qa.src 模块 v{__version__}")
+print(f"加载 knowledge_qa.src 模块 v{__version__} (只检索模式)")
