@@ -232,8 +232,6 @@ class DeepSeekAPI:
         
         return context_text
 
-
-# 初始化向量存储 - 只检索模式
 @st.cache_resource
 def init_vector_store():
     """初始化向量存储 - 只加载现有数据库，不处理新文档"""
@@ -242,34 +240,50 @@ def init_vector_store():
         
         # 检查向量数据库目录是否存在
         chroma_db_path = "./chroma_db"
-        vector_store = SmartVectorStore()
-    
-        if not vector_store.vector_store_exists():
-            st.error("❌ 知识库未找到，请确保已上传 chroma_db 目录")
+        if not os.path.exists(chroma_db_path):
+            st.error(f"❌ 向量数据库目录不存在: {chroma_db_path}")
             return None
             
-        st.info(f"📁 找到向量数据库目录: {chroma_db_path}")
+        # 检查目录内容
+        files = os.listdir(chroma_db_path)
+        st.info(f"📁 找到向量数据库目录，包含 {len(files)} 个文件")
+        st.info(f"📄 文件列表: {files}")
         
-        # 创建向量存储实例 - 只检索模式
+        # 创建向量存储实例
         vector_store = SmartVectorStore()
         
         # 检查向量存储是否存在
         if vector_store.vector_store_exists():
             st.info("🔄 正在加载现有向量存储...")
             if vector_store.load_existing_vector_store():
-                # 测试检索功能
-                try:
-                    st.success(f"✅ 知识库加载成功！准备就绪")
-                    return vector_store
-                except Exception as e:
-                    st.error(f"❌ 向量存储测试检索失败: {str(e)}")
-                    return None
+                st.success("✅ 知识库加载成功！准备就绪")
+                return vector_store
             else:
                 st.error("❌ 向量存储加载失败")
+                # 添加详细错误信息
+                try:
+                    # 尝试直接加载查看具体错误
+                    from langchain_community.vectorstores import Chroma
+                    from langchain_community.embeddings import HuggingFaceEmbeddings
+                    
+                    embedding_model = HuggingFaceEmbeddings(
+                        model_name="BAAI/bge-small-zh-v1.5",
+                        model_kwargs={'device': 'cpu'},
+                        encode_kwargs={'normalize_embeddings': True}
+                    )
+                    
+                    test_store = Chroma(
+                        persist_directory=chroma_db_path,
+                        embedding_function=embedding_model,
+                        collection_name="pdf_documents"
+                    )
+                    count = test_store._collection.count()
+                    st.info(f"测试加载成功，文档数量: {count}")
+                except Exception as e:
+                    st.error(f"详细错误: {str(e)}")
                 return None
         else:
             st.error("❌ 未找到可用的向量存储")
-            st.info("💡 请先运行 `python main.py` 选择模式1、2或4来处理PDF文档")
             return None
             
     except Exception as e:
@@ -527,4 +541,5 @@ def main():
             st.rerun()
 
 if __name__ == "__main__":
+
     main()
