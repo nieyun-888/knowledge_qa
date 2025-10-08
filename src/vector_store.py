@@ -46,41 +46,88 @@ class VectorStore:
         logger.info("使用备用嵌入模型")
         return self._create_fallback_embedder()
        
-    
     def _create_fallback_embedder(self):
-        """创建备用的简单嵌入模型"""
-        import numpy as np
-        import hashlib
+        """创建备用的简单嵌入模型 - 不依赖numpy"""
+        try:
+            # 先尝试导入numpy（如果可用）
+            import numpy as np
+            has_numpy = True
+        except ImportError:
+            # 如果numpy不可用，使用纯Python实现
+            import random
+            import math
+            has_numpy = False
         
-        class SimpleEmbedder:
-            def __init__(self):
-                self.dim = 384
+        if has_numpy:
+            # 使用numpy的实现
+            class SimpleEmbedder:
+                def __init__(self):
+                    self.dim = 384
+                    
+                def embed_documents(self, texts):
+                    logger.info(f"为 {len(texts)} 个文档生成嵌入")
+                    embeddings = []
+                    for i, text in enumerate(texts):
+                        if i % 10 == 0 and i > 0:
+                            logger.info(f"已处理 {i}/{len(texts)} 个文档")
+                        embeddings.append(self._text_to_vector(text))
+                    return embeddings
                 
-            def embed_documents(self, texts):
-                logger.info(f"为 {len(texts)} 个文档生成嵌入")
-                embeddings = []
-                for i, text in enumerate(texts):
-                    if i % 10 == 0 and i > 0:
-                        logger.info(f"已处理 {i}/{len(texts)} 个文档")
-                    embeddings.append(self._text_to_vector(text))
-                return embeddings
+                def embed_query(self, text):
+                    return self._text_to_vector(text)
+                
+                def _text_to_vector(self, text):
+                    # 使用文本内容的哈希值生成确定性随机向量
+                    text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+                    seed = int(text_hash[:8], 16)
+                    np.random.seed(seed)
+                    vector = np.random.normal(0, 1, self.dim)
+                    # 归一化向量
+                    norm = np.linalg.norm(vector)
+                    if norm > 0:
+                        vector = vector / norm
+                    return vector.tolist()
             
-            def embed_query(self, text):
-                return self._text_to_vector(text)
+            return SimpleEmbedder()
+        else:
+            # 纯Python实现，不依赖numpy
+            import random
+            import math
+            import hashlib
             
-            def _text_to_vector(self, text):
-                # 使用文本内容的哈希值生成确定性随机向量
-                text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
-                seed = int(text_hash[:8], 16)
-                np.random.seed(seed)
-                vector = np.random.normal(0, 1, self.dim)
-                # 归一化向量
-                norm = np.linalg.norm(vector)
-                if norm > 0:
-                    vector = vector / norm
-                return vector.tolist()
-        
-        return SimpleEmbedder()
+            class PurePythonEmbedder:
+                def __init__(self):
+                    self.dim = 384
+                    
+                def embed_documents(self, texts):
+                    logger.info(f"为 {len(texts)} 个文档生成嵌入（纯Python模式）")
+                    return [self._text_to_vector(text) for text in texts]
+                
+                def embed_query(self, text):
+                    return self._text_to_vector(text)
+                
+                def _text_to_vector(self, text):
+                    # 纯Python实现，不依赖numpy
+                    text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+                    seed = int(text_hash[:8], 16)
+                    random.seed(seed)
+                    
+                    # 生成随机向量
+                    vector = [random.gauss(0, 1) for _ in range(self.dim)]
+                    
+                    # 计算向量模长
+                    norm = math.sqrt(sum(x * x for x in vector))
+                    
+                    # 归一化
+                    if norm > 0:
+                        vector = [x / norm for x in vector]
+                    
+                    return vector
+            
+            logger.info("使用纯Python备用嵌入模型")
+            return PurePythonEmbedder()
+
+
     
     def create_vector_store(self, documents):
         """创建向量存储 - 使用 Chroma"""
